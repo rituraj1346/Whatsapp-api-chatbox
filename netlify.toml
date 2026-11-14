@@ -1,0 +1,55 @@
+# Netlify reads this file. You never need to change it.
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+# Everything that isn't a plain file goes to the app function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/app/api/:splat"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/webhook"
+  to = "/.netlify/functions/app/webhook"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/webhook/*"
+  to = "/.netlify/functions/app/webhook/:splat"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/manifest.webmanifest"
+  to = "/.netlify/functions/app/manifest.webmanifest"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/favicon.svg"
+  to = "/.netlify/functions/app/favicon.svg"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/apple-touch-icon.png"
+  to = "/.netlify/functions/app/apple-touch-icon.png"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/apple-touch-icon-precomposed.png"
+  to = "/.netlify/functions/app/apple-touch-icon-precomposed.png"
+  status = 200
+  force = true
+[[redirects]]
+  from = "/icons/*"
+  to = "/.netlify/functions/app/icons/:splat"
+  status = 200
+  force = true
+
+# Same security headers as the app sends; no-cache so installed apps always get the newest version
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob:; style-src 'self'; script-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Cache-Control = "no-cache"

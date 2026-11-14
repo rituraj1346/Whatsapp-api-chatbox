@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Business Inbox">
+  <title>Business Inbox</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="common.js" defer></script>
+  <script src="settings.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+<div id="loading" class="loading">Loading…</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<!-- ============ Create password / Login ============ -->
+<section id="auth" class="auth" hidden>
+  <div class="auth-card">
+    <img class="auth-logo brand-icon" src="/favicon.svg" alt="" width="72" height="72">
+    <h1 id="auth-title">Log in</h1>
+    <p id="auth-sub" class="muted"></p>
+    <form id="auth-form">
+      <label>Username
+        <input id="auth-user" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      </label>
+      <label>Password
+        <input type="password" id="auth-pw" autocomplete="current-password" required>
+      </label>
+      <label id="auth-pw2-row" hidden>Type it again
+        <input type="password" id="auth-pw2" autocomplete="new-password">
+      </label>
+      <p class="error" id="auth-error" hidden></p>
+      <button class="btn primary wide" id="auth-btn">Log in</button>
+    </form>
+    <p class="muted auth-switch" id="auth-switch"><span></span> <button type="button" class="link-btn"></button></p>
+  </div>
+</section>
+
+<!-- ============ Settings ============ -->
+<section id="settings" class="settings" hidden>
+  <header class="settings-head">
+    <button id="settings-back" class="icon-btn" title="Back to chats" aria-label="Back to chats" hidden>
+      <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 4l1.4 1.4L7.8 11H20v2H7.8l5.6 5.6L12 20l-8-8z"/></svg>
+    </button>
+    <h1>Settings</h1>
+  </header>
+  <nav class="tabs" id="tabs" role="tablist">
+    <button role="tab" data-tab="connection">Connection</button>
+    <button role="tab" data-tab="receive" data-needs-connection>Receive messages</button>
+    <button role="tab" data-tab="profile" data-needs-connection>Business profile</button>
+    <button role="tab" data-tab="templates" data-needs-connection>Templates</button>
+    <button role="tab" data-tab="quick">Quick replies</button>
+    <button role="tab" data-tab="auto">Auto-replies</button>
+    <button role="tab" data-tab="security">Chats &amp; security</button>
+    <button role="tab" data-tab="branding">Branding</button>
+  </nav>
+  <div class="settings-body">
+    <div id="setup-step" class="step" hidden>
+      <span id="setup-step-text"></span>
+      <button id="setup-done" class="btn primary small" hidden>Go to my chats →</button>
+    </div>
+
+    <!-- Connection -->
+    <div data-panel="connection">
+      <div class="card">
+        <div class="card-head">
+          <h2>Your WhatsApp number</h2>
+          <span id="lock-badge" class="badge" hidden></span>
+        </div>
+        <p id="conn-status" class="conn-status" hidden></p>
+        <p id="conn-intro" class="muted">Copy these 4 values from your Meta app. Open <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com/apps</a> and pick your app.</p>
+        <form id="cred-form" autocomplete="off">
+          <label>Access token
+            <input name="token" type="password" spellcheck="false">
+            <small>Use a permanent token: Meta Business Settings → Users → System users → Generate new token. Tick <b>whatsapp_business_messaging</b> and <b>whatsapp_business_management</b>.</small>
+          </label>
+          <label>Phone number ID
+            <input name="phoneNumberId" inputmode="numeric" spellcheck="false">
+            <small>Your app → WhatsApp → API Setup, under the "From" phone number.</small>
+          </label>
+          <label>WhatsApp Business Account ID
+            <input name="wabaId" inputmode="numeric" spellcheck="false">
+            <small>Same page (API Setup), just below the Phone number ID.</small>
+          </label>
+          <label>App secret
+            <input name="appSecret" type="password" spellcheck="false">
+            <small>Your app → App settings → Basic → App secret → Show.</small>
+          </label>
+          <details class="advanced">
+            <summary>Advanced</summary>
+            <label>App ID
+              <input name="appId" inputmode="numeric" spellcheck="false">
+              <small>Found automatically. Only fill this in if the webhook says the App ID is unknown (App settings → Basic).</small>
+            </label>
+            <label>Verify token
+              <input name="verifyToken" spellcheck="false">
+              <small>Made for you if left empty. Only needed if you set up the webhook by hand.</small>
+            </label>
+            <label>Graph API version
+              <input name="graphVersion" placeholder="v21.0" spellcheck="false">
+            </label>
+          </details>
+          <p class="error" id="cred-error" hidden></p>
+          <div class="actions">
+            <button type="button" class="btn" id="cred-edit" hidden>✏️ Edit</button>
+            <button type="button" class="btn" id="cred-cancel" hidden>Cancel</button>
+            <button class="btn primary" id="cred-save">Check &amp; save</button>
+          </div>
+        </form>
+      </div>
+      <form id="register-form" class="card" hidden>
+        <h2>Register phone number</h2>
+        <p class="muted">Needed once for a real (non-test) number before it can send. Choose a 6-digit PIN. It becomes the number's two-step verification PIN, so write it down.</p>
+        <div class="inline-row">
+          <input name="pin" inputmode="numeric" maxlength="6" placeholder="6-digit PIN" aria-label="6-digit PIN" autocomplete="off">
+          <button class="btn primary">Register</button>
+        </div>
+        <p class="error" id="register-error" hidden></p>
+      </form>
+    </div>
+
+    <!-- Receive messages -->
+    <div data-panel="receive" hidden>
+      <div class="card">
+        <h2>This app's address</h2>
+        <p class="muted">Meta sends new messages here. It is set for you, and the webhook is connected when you save your Meta details.</p>
+        <div class="copy-row"><span>Address</span><code id="app-origin">—</code><button type="button" class="btn small" data-copy="app-origin">Copy</button></div>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>Webhook</h2>
+          <span id="wh-badge" class="badge ok" hidden>✓ Connected</span>
+        </div>
+        <p id="wh-message" class="muted"></p>
+        <div class="actions left">
+          <button class="btn" id="wh-connect">Connect webhook now</button>
+          <button class="btn" id="wh-check">Check status with Meta</button>
+        </div>
+        <ul id="wh-status" class="checklist" hidden></ul>
+        <details class="advanced">
+          <summary>Do it by hand instead</summary>
+          <p class="muted">In your Meta app → WhatsApp → Configuration → Webhook → Edit, paste these two values, then subscribe to the <b>messages</b> field.</p>
+          <div class="copy-row"><span>Callback URL</span><code id="cb-url">—</code><button type="button" class="btn small" data-copy="cb-url">Copy</button></div>
+          <div class="copy-row"><span>Verify token</span><code id="vt">—</code><button type="button" class="btn small" data-copy="vt">Copy</button></div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Business profile -->
+    <form data-panel="profile" id="bp-form" class="card" hidden>
+      <h2>Business profile</h2>
+      <p class="muted">Customers see this when they tap your name in WhatsApp.</p>
+      <div class="bp-top">
+        <img id="bp-pic" class="bp-pic" alt="Profile picture" hidden>
+        <small class="muted">The profile picture is shown here read-only. Change it in WhatsApp Manager.</small>
+      </div>
+      <label>About <small class="counter"><span id="about-count">0</span>/139</small>
+        <input name="about" maxlength="139" required>
+      </label>
+      <label>Description<textarea name="description" maxlength="512" rows="3"></textarea></label>
+      <label>Address<input name="address" maxlength="256"></label>
+      <label>Email<input name="email" type="email"></label>
+      <label>Website<input name="website1" type="url" placeholder="https://"></label>
+      <label>Second website<input name="website2" type="url" placeholder="https://"></label>
+      <label>Category<select name="vertical"></select></label>
+      <p class="error" id="bp-error" hidden></p>
+      <div class="actions"><button class="btn primary">Save profile</button></div>
+    </form>
+
+    <!-- Templates -->
+    <div data-panel="templates" hidden>
+      <div class="card">
+        <div class="card-head"><h2>Your templates</h2><button type="button" class="btn small" id="tpl-refresh">Refresh</button></div>
+        <p class="muted">Templates are pre-approved messages. They are the only way to start a chat, or to write after 24 hours of silence.</p>
+        <ul id="tpl-list" class="list"></ul>
+      </div>
+      <form id="tpl-form" class="card">
+        <h2>New template</h2>
+        <p class="muted">Meta checks every new template, usually within a few minutes.</p>
+        <label>Name<input name="name" placeholder="order_update" required spellcheck="false">
+          <small>Lowercase letters, numbers and _ only.</small></label>
+        <div class="row">
+          <label>Category<select name="category">
+            <option value="UTILITY">Utility (orders, reminders, updates)</option>
+            <option value="MARKETING">Marketing (offers, news)</option>
+          </select></label>
+          <label>Language<select name="language" id="tpl-language"></select></label>
+        </div>
+        <label>Header (optional)<input name="header" maxlength="60"></label>
+        <label>Message
+          <textarea name="body" rows="4" maxlength="1024" required placeholder="Hi {{1}}, your order {{2}} is ready for pickup."></textarea>
+          <small>Use {{1}}, {{2}}… for the parts that change, like a name. <button type="button" class="link-btn" id="tpl-addvar">+ Add variable</button></small>
+        </label>
+        <div id="tpl-examples" class="examples"></div>
+        <label>Footer (optional)<input name="footer" maxlength="60"></label>
+        <p class="error" id="tpl-error" hidden></p>
+        <div class="actions"><button class="btn primary">Submit for approval</button></div>
+      </form>
+    </div>
+
+    <!-- Quick replies -->
+    <div data-panel="quick" hidden>
+      <form id="qr-form" class="card">
+        <h2 id="qr-form-title">Add a quick reply</h2>
+        <input type="hidden" name="id">
+        <label>Shortcut<input name="title" placeholder="thanks" maxlength="60" required></label>
+        <label>Message<textarea name="body" rows="3" maxlength="4096" required placeholder="Thank you for your order!"></textarea></label>
+        <p class="error" id="qr-error" hidden></p>
+        <div class="actions">
+          <button type="button" class="btn" id="qr-cancel" hidden>Cancel</button>
+          <button class="btn primary">Save</button>
+        </div>
+      </form>
+      <div class="card">
+        <h2>Your quick replies</h2>
+        <p class="muted">In a chat, type <b>/</b> at the start of a message or click ⚡.</p>
+        <ul id="qr-items" class="list"></ul>
+      </div>
+    </div>
+
+    <!-- Auto-replies -->
+    <form data-panel="auto" id="ar-form" hidden>
+      <div class="card">
+        <label class="switch-row"><span><b>Welcome message</b><small>Sent when someone messages you for the very first time.</small></span>
+          <input type="checkbox" name="welcomeEnabled" class="switch"></label>
+        <textarea name="welcomeText" rows="3" maxlength="4096" aria-label="Welcome message"></textarea>
+      </div>
+      <div class="card">
+        <label class="switch-row"><span><b>Away message</b><small>Sent outside your opening hours, at most once every 12 hours per customer.</small></span>
+          <input type="checkbox" name="awayEnabled" class="switch"></label>
+        <textarea name="awayText" rows="3" maxlength="4096" aria-label="Away message"></textarea>
+        <p class="label">Open on</p>
+        <div class="chips">
+          <label class="chip"><input type="checkbox" name="days" value="1"><span>Mon</span></label>
+          <label class="chip"><input type="checkbox" name="days" value="2"><span>Tue</span></label>
+          <label class="chip"><input type="checkbox" name="days" value="3"><span>Wed</span></label>
+          <label class="chip"><input type="checkbox" name="days" value="4"><span>Thu</span></label>
+          <label class="chip"><input type="checkbox" name="days" value="5"><span>Fri</span></label>
+          <label class="chip"><input type="checkbox" name="days" value="6"><span>Sat</span></label>
+          <label class="chip"><input type="checkbox" name="days" value="0"><span>Sun</span></label>
+        </div>
+        <div class="row">
+          <label>From<input type="time" name="start" required></label>
+          <label>To<input type="time" name="end" required></label>
+        </div>
+        <small class="muted">If "To" is earlier than "From" (like 20:00 to 02:00), the hours run past midnight.</small>
+        <label>Time zone<input name="timezone" list="tz-list" required spellcheck="false"><datalist id="tz-list"></datalist></label>
+      </div>
+      <p class="error" id="ar-error" hidden></p>
+      <div class="actions"><button class="btn primary">Save auto-replies</button></div>
+    </form>
+
+    <!-- Branding -->
+    <form data-panel="branding" id="brand-form" class="card" hidden>
+      <h2>Branding</h2>
+      <p class="muted">Your own app name and colour. They are used for the app icon, the home-screen name and the colours.</p>
+      <div class="brand-preview">
+        <img id="brand-icon" class="brand-icon" src="/favicon.svg" alt="" width="64" height="64">
+        <b id="brand-name-preview"></b>
+      </div>
+      <label>App name<input name="appName" maxlength="30" required></label>
+      <p class="label">Colour</p>
+      <div class="swatches" id="swatches">
+        <label class="swatch custom" title="Pick any colour"><input type="color" name="accent" aria-label="Custom colour"></label>
+      </div>
+      <small class="muted">Phones keep the old home-screen icon until you remove the app from the home screen and add it again.</small>
+      <p class="error" id="brand-error" hidden></p>
+      <div class="actions"><button type="button" class="btn" id="brand-reset">Undo changes</button><button class="btn primary">Save branding</button></div>
+    </form>
+
+    <!-- Chats & security -->
+    <div data-panel="security" hidden>
+      <div class="card">
+        <h2>Chats</h2>
+        <label class="switch-row"><span><b>Send read receipts</b><small>Customers see blue ticks when you open their chat.</small></span>
+          <input type="checkbox" id="pref-read" class="switch"></label>
+      </div>
+      <div class="card" id="push-card">
+        <h2>Notifications on this device</h2>
+        <p id="push-state" class="muted"></p>
+        <div class="actions left">
+          <button type="button" class="btn primary" id="push-on" hidden>🔔 Turn on notifications</button>
+          <button type="button" class="btn" id="push-test" hidden>Send test notification</button>
+          <button type="button" class="btn danger" id="push-off" hidden>Turn off on this device</button>
+        </div>
+        <label class="switch-row"><span><b>Show the message text in notifications</b><small>Turn off to only show "New message", for example on a shared screen.</small></span>
+          <input type="checkbox" id="pref-preview" class="switch"></label>
+        <p class="label">Devices getting notifications</p>
+        <ul id="push-devices" class="list"></ul>
+      </div>
+      <div class="card">
+        <h2>Install the app</h2>
+        <p id="install-help" class="muted"></p>
+        <div class="actions left"><button type="button" class="btn primary" id="install-btn" hidden>Install</button></div>
+      </div>
+      <div class="card">
+        <h2>Account</h2>
+        <p id="users-help" class="muted"></p>
+        <ul id="users-list" class="list" hidden></ul>
+      </div>
+      <form id="pw-form" class="card">
+        <h2>Change your password</h2>
+        <label>Current password<input type="password" name="current" autocomplete="current-password" required></label>
+        <label>New password<input type="password" name="next" autocomplete="new-password" minlength="8" required></label>
+        <label>New password again<input type="password" name="next2" autocomplete="new-password" required></label>
+        <p class="error" id="pw-error" hidden></p>
+        <div class="actions"><small class="muted">This logs you out on your other devices.</small><button class="btn primary">Change password</button></div>
+      </form>
+      <div class="card">
+        <div class="actions left"><button type="button" class="btn danger" id="logout-btn">Log out</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Inbox ============ -->
+<section id="inbox" class="inbox" hidden>
+  <aside class="sidebar">
+    <header class="side-head">
+      <div class="avatar me-avatar" id="me-avatar"></div>
+      <div class="me"><b id="me-name"></b><small id="me-number"></small></div>
+      <button class="icon-btn" id="new-chat-btn" title="New chat" aria-label="New chat">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19 3H5a2 2 0 0 0-2 2v14l4-4h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-6 9h-2v-2H9V8h2V6h2v2h2v2h-2z"/></svg>
+      </button>
+      <button class="icon-btn" id="open-settings" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7 7 0 0 0-1.7-1L15 3h-4l-.4 2.7a7 7 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7 7 0 0 0 1.7 1L11 21h4l.4-2.7a7 7 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+      </button>
+    </header>
+    <div id="install-tip" class="install-tip" hidden>
+      <span id="install-tip-text"></span>
+      <button type="button" class="btn small primary" id="install-tip-btn" hidden>Install</button>
+      <button type="button" class="icon-btn" id="install-tip-close" title="Hide" aria-label="Hide this tip">✕</button>
+    </div>
+    <div class="search"><input id="search" type="search" placeholder="Search chats" aria-label="Search chats"></div>
+    <ul id="chat-list" class="chat-list"></ul>
+    <p id="no-chats" class="muted center pad" hidden>No chats yet. When a customer writes to your number, the chat appears here. Click ✚ above to start one.</p>
+  </aside>
+  <main class="chat">
+    <div id="placeholder" class="placeholder">
+      <img class="placeholder-art brand-icon" src="/favicon.svg" alt="" width="96" height="96">
+      <h2 class="brand-name">Business Inbox</h2>
+      <p class="muted">Pick a chat on the left to read and reply.<br>Messages are sent from your WhatsApp Business number, and stay in sync on all your devices.</p>
+    </div>
+    <div id="thread" class="thread" hidden>
+      <header class="thread-head">
+        <button class="icon-btn mobile-only" id="back-to-list" title="Back" aria-label="Back to chats">
+          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 4l1.4 1.4L7.8 11H20v2H7.8l5.6 5.6L12 20l-8-8z"/></svg>
+        </button>
+        <div class="avatar" id="t-avatar"></div>
+        <button class="t-info" id="t-name-btn" title="Rename contact">
+          <b id="t-name"></b><small id="t-sub"></small>
+        </button>
+      </header>
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <div id="window-closed" class="window-closed" hidden>
+        <p>More than 24 hours have passed since this customer last wrote (or they never did). WhatsApp only allows an approved template now.</p>
+        <button class="btn primary" id="closed-template">Send template</button>
+      </div>
+      <form id="composer" class="composer">
+        <button type="button" class="icon-btn" id="attach-btn" title="Send a file" aria-label="Send a file">
+          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M16.5 6.5v10a4.5 4.5 0 0 1-9 0V5a3 3 0 0 1 6 0v10.5a1.5 1.5 0 0 1-3 0V6.5H9v9a3 3 0 0 0 6 0V5a4.5 4.5 0 0 0-9 0v11.5a6 6 0 0 0 12 0v-10z"/></svg>
+        </button>
+        <input type="file" id="file-input" hidden>
+        <button type="button" class="icon-btn" id="template-btn" title="Send a template" aria-label="Send a template">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm2 16H8v-2h8zm0-4H8v-2h8zm-3-5V3.5L18.5 9z"/></svg>
+        </button>
+        <button type="button" class="icon-btn" id="qr-btn" title="Quick replies" aria-label="Quick replies">⚡</button>
+        <textarea id="text" rows="1" placeholder="Type a message" aria-label="Message"></textarea>
+        <button class="send-btn" id="send-btn" title="Send" aria-label="Send">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+        <div id="qr-pop" class="qr-pop" hidden>
+          <input id="qr-search" placeholder="Search quick replies" aria-label="Search quick replies">
+          <ul id="qr-list" role="listbox"></ul>
+          <p id="qr-empty" class="muted pad" hidden>No quick replies found.</p>
+          <a href="#" id="qr-manage">Manage quick replies</a>
+        </div>
+      </form>
+    </div>
+  </main>
+</section>
+
+<!-- ============ Dialogs ============ -->
+<dialog id="unlock-dialog">
+  <form method="dialog" id="unlock-form">
+    <h2>Enter your password</h2>
+    <p class="muted">For safety, connection details stay locked. Unlocking keeps them editable for 10 minutes.</p>
+    <input type="password" id="unlock-pw" autocomplete="current-password" aria-label="Password" required>
+    <p class="error" id="unlock-error" hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" value="ok">Unlock</button></div>
+  </form>
+</dialog>
+
+<dialog id="newchat-dialog">
+  <form method="dialog" id="newchat-form">
+    <h2>New chat</h2>
+    <label>Phone number with country code<input id="newchat-phone" inputmode="tel" placeholder="91 98765 43210" required></label>
+    <p class="muted">You start a new chat with an approved template.</p>
+    <p class="error" id="newchat-error" hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" value="ok">Next</button></div>
+  </form>
+</dialog>
+
+<dialog id="template-dialog">
+  <form method="dialog" id="template-form">
+    <h2>Send a template</h2>
+    <div id="tpl-none" hidden>
+      <p class="muted">You have no approved templates yet.</p>
+      <p><a href="#" id="tpl-goto-settings">Create one in Settings → Templates</a></p>
+    </div>
+    <div id="tpl-pick">
+      <label>Template<select id="tpl-select"></select></label>
+      <div id="tpl-vars"></div>
+      <p class="label">Preview</p>
+      <div class="tpl-preview" id="tpl-preview"></div>
+    </div>
+    <p class="error" id="tpl-send-error" hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" id="tpl-send" value="ok">Send</button></div>
+  </form>
+</dialog>
+
+<dialog id="rename-dialog">
+  <form method="dialog" id="rename-form">
+    <h2>Rename contact</h2>
+    <label>Name<input id="rename-input" maxlength="100"></label>
+    <small class="muted" id="rename-hint"></small>
+    <p class="error" id="rename-error" hidden></p>
+    <div class="actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" value="ok">Save</button></div>
+  </form>
+</dialog>
+</body>
+</html>

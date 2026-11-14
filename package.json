@@ -1,0 +1,29 @@
+{
+  "name": "business-inbox",
+  "version": "1.0.0",
+  "description": "Business Inbox: send and read messages from your WhatsApp Business API number on phones and computers.",
+  "type": "module",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Rituraj Deka",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning test/smoke.js",
+    "secret": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"",
+    "deploy": "npx -y netlify-cli deploy --prod"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.15",
+    "express": "^4.21.2",
+    "postgres": "^4.0.0",
+    "serverless-http": "^4.0.0",
+    "web-push": "3.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite-socket": "^0.2.18"
+  }
+}
